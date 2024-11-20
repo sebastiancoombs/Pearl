@@ -17,7 +17,7 @@ from pearl.api.environment import Environment
 from pearl.api.reward import Value
 from pearl.pearl_agent import PearlAgent
 from pearl.utils.functional_utils.experimentation.plots import fontsize_for
-
+from tqdm.autonotebook import tqdm
 MA_WINDOW_SIZE = 10
 
 
@@ -105,7 +105,14 @@ def online_learning(
     total_episodes = 0
     info = {}
     info_period = {}
+
+    if number_of_episodes == None:
+        bar=tqdm(range(number_of_steps))
+    if  number_of_steps == None:
+        bar=tqdm(range(number_of_episodes))
+
     while True:
+        
         if number_of_episodes is not None and total_episodes >= number_of_episodes:
             break
         if number_of_steps is not None and total_steps >= number_of_steps:
@@ -121,6 +128,21 @@ def online_learning(
             total_steps=old_total_steps,
             seed=seed,
         )
+        # print(f'RAN AN EPISODE n_episode:{number_of_episodes} n_steps:{number_of_steps}')
+        if number_of_episodes == None:
+            # print(f'RAN AN EPISODE n_steps:{episode_total_steps}/{number_of_steps}')
+
+            bar.update(episode_total_steps)
+
+        if number_of_steps == None:
+            # print(f'RAN AN EPISODE n_episode:{number_of_episodes}')
+
+            bar.update(1)
+
+        bar.set_description(
+                f"episode {total_episodes}, step {total_steps}, return {episode_info['return']}",
+            )
+
         if number_of_steps is not None and episode_total_steps > record_period:
             print(
                 f"An episode is longer than the record_period: episode length {episode_total_steps}"
@@ -129,6 +151,9 @@ def online_learning(
             exit(1)
         total_steps += episode_total_steps
         total_episodes += 1
+
+
+
         if (
             print_every_x_steps is not None
             and old_total_steps // print_every_x_steps
@@ -137,11 +162,10 @@ def online_learning(
             print_every_x_episodes is not None
             and total_episodes % print_every_x_episodes == 0
         ):
-            print(
-                f"episode {total_episodes}, step {total_steps}, agent={agent}, env={env}",
+            bar.set_description(
+                f"episode {total_episodes}, step {total_steps}, return {episode_info['return']}",
             )
-            for key in episode_info:
-                print(f"{key}: {episode_info[key]}")
+
         for key in episode_info:
             info_period.setdefault(key, []).append(episode_info[key])
         if number_of_episodes is not None and (
@@ -262,7 +286,9 @@ def run_episode(
     done = False
     episode_steps = 0
     num_risky_sa = 0
+    # mini_bar = tqdm(range(env.env.max_episode_duration),leave=True,desc="episode running")
     while not done:
+        # mini_bar.update(1)
         action = agent.act(exploit=exploit)
         action = (
             action.cpu() if isinstance(action, torch.Tensor) else action
