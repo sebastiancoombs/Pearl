@@ -80,6 +80,7 @@ def online_learning(
     print_every_x_steps: Optional[int] = None,
     seed: Optional[int] = None,
     record_period: int = 1,
+    learning_start_step: int = 0,
     # TODO: use LearningLogger similarly to offline_learning
 ) -> Dict[str, Any]:
     """
@@ -97,6 +98,8 @@ def online_learning(
         If number_of_episodes is used, report every record_period episodes.
         If number_of_steps is used, report every record_period steps
         Episodic statistics collected within this period are averaged and then recorded.
+        learning_start_step (int, optional): the agent starts to learn at learning_start_step.
+            Defaults to 0.
     """
     assert (number_of_episodes is None and number_of_steps is not None) or (
         number_of_episodes is not None and number_of_steps is None
@@ -127,6 +130,7 @@ def online_learning(
             learn_every_k_steps=learn_every_k_steps,
             total_steps=old_total_steps,
             seed=seed,
+            learning_start_step=learning_start_step,
         )
         # print(f'RAN AN EPISODE n_episode:{number_of_episodes} n_steps:{number_of_steps}')
         if number_of_episodes == None:
@@ -258,6 +262,7 @@ def run_episode(
     learn_every_k_steps: int = 1,
     total_steps: int = 0,
     seed: Optional[int] = None,
+    learning_start_step: int = 0,
 ) -> Tuple[Dict[str, Any], int]:
     """
     Runs one episode and returns an info dict and number of steps taken.
@@ -272,6 +277,8 @@ def run_episode(
         learn_every_k_steps (int, optional): asks the agent to learn every k steps.
         total_steps (int, optional): the total number of steps taken so far. Defaults to 0.
         seed (int, optional): the seed for the environment. Defaults to None.
+        learning_start_step (int, optional): the agent starts to learn at learning_start_step.
+            Defaults to 0.
     Returns:
         Tuple[Dict[str, Any], int]: the return of the episode and the number of steps taken.
     """
@@ -311,7 +318,7 @@ def run_episode(
         agent.observe(action_result)
         done = action_result.done
         episode_steps += 1
-        if learn:
+        if learn and (total_steps + episode_steps >= learning_start_step):
             if learn_after_episode:
                 # when learn_after_episode is True, we learn only at the end of the episode,
                 # regardless of the value of learn_every_k_steps.
