@@ -56,8 +56,14 @@ def get_pearl_device(device_id: int = -1) -> torch.device:
         local_rank = dist.get_rank()
     except Exception:
         local_rank = 0
-
-    return torch.device(f"cuda:{local_rank}" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        return torch.device(f"cuda:{local_rank}" )
+    elif torch.mps.is_available():
+        # print(F'RUNNING ON MPS DEVICE {torch.mps.is_available()}')
+        return torch.device(f"mps:{local_rank}")
+    else:
+        return torch.device("cpu")
+    
 
 
 def is_distribution_enabled() -> bool:
